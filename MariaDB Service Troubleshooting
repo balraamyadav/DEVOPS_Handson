@@ -1,0 +1,166 @@
+MariaDB Service Troubleshooting (KodeKloud Notes)
+Scenario
+
+The application cannot connect to the database because the MariaDB service is down on the database server.
+
+Step 1: SSH into the Database Server
+ssh peter@stdb01
+
+Become the root user:
+
+sudo su -
+Step 2: Check MariaDB Service Status
+systemctl status mariadb
+
+or
+
+systemctl is-active mariadb
+
+Possible outputs:
+
+active
+inactive
+failed
+Step 3: Start the Service
+systemctl start mariadb
+
+Verify:
+
+systemctl is-active mariadb
+
+Expected:
+
+active
+Step 4: If the Service Fails
+
+Check detailed logs:
+
+systemctl status mariadb --no-pager -l
+journalctl -xeu mariadb.service --no-pager
+
+These commands usually tell you the exact reason for the failure.
+
+Error Seen in This Lab
+chown: changing ownership of '/var/lib/mysql': Operation not permitted
+
+This indicated a permissions/ownership issue with the MariaDB data directory.
+
+Step 5: Check Directory Ownership
+ls -ld /var/lib/mysql
+
+Incorrect:
+
+drwxr-xr-x root mysql
+
+Correct:
+
+drwxr-xr-x mysql mysql
+Step 6: Fix Ownership
+chown -R mysql:mysql /var/lib/mysql
+
+Verify:
+
+ls -ld /var/lib/mysql
+
+Expected:
+
+drwxr-xr-x mysql mysql
+Step 7: Start MariaDB Again
+systemctl start mariadb
+
+Verify:
+
+systemctl status mariadb
+
+or
+
+systemctl is-active mariadb
+
+Expected:
+
+active
+Step 8: Verify Database Files
+ls -l /var/lib/mysql
+
+Typical files:
+
+ibdata1
+ib_logfile0
+ibtmp1
+mysql.sock
+performance_schema
+mysql/
+
+The presence of mysql.sock generally indicates the server has started successfully.
+
+Useful MariaDB Service Commands
+Check status
+systemctl status mariadb
+Check only active state
+systemctl is-active mariadb
+Start
+systemctl start mariadb
+Stop
+systemctl stop mariadb
+Restart
+systemctl restart mariadb
+Enable at boot
+systemctl enable mariadb
+Disable at boot
+systemctl disable mariadb
+Useful Troubleshooting Commands
+Detailed status
+systemctl status mariadb --no-pager -l
+Service logs
+journalctl -xeu mariadb.service --no-pager
+Last 50 log lines
+journalctl -xeu mariadb.service --no-pager | tail -50
+Check Directory Ownership
+ls -ld /var/lib/mysql
+Change Ownership
+chown -R mysql:mysql /var/lib/mysql
+Check Permissions
+ls -l /var/lib/mysql
+Common Reasons MariaDB Fails to Start
+Issue	How to Check	Fix
+Service stopped	systemctl status mariadb	systemctl start mariadb
+Wrong ownership	ls -ld /var/lib/mysql	chown -R mysql:mysql /var/lib/mysql
+Incorrect permissions	ls -l /var/lib/mysql	chmod / chown as needed
+Configuration error	journalctl -xeu mariadb.service	Fix /etc/my.cnf
+Disk full	df -h	Free disk space
+Port 3306 in use	`ss -tulpn	grep 3306`
+SELinux issues	getenforce	Correct context or policy
+Interview Questions
+1. How do you check whether MariaDB is running?
+systemctl status mariadb
+
+or
+
+systemctl is-active mariadb
+2. How do you start MariaDB?
+systemctl start mariadb
+3. Where are the MariaDB logs?
+journalctl -xeu mariadb.service
+4. Where is the default MariaDB data directory?
+/var/lib/mysql
+5. Which user should own the MariaDB data directory?
+mysql:mysql
+6. What command fixes the ownership?
+chown -R mysql:mysql /var/lib/mysql
+7. How do you enable MariaDB to start automatically after reboot?
+systemctl enable mariadb
+Real-World Troubleshooting Workflow
+SSH into the database server.
+Check the MariaDB service status.
+Attempt to start the service.
+If it fails, inspect the service logs.
+Verify ownership and permissions of /var/lib/mysql.
+Fix ownership or configuration issues.
+Restart MariaDB.
+Confirm the service is active.
+Verify the application can connect to the database.
+Key Takeaways
+Always check systemctl status and journalctl before making changes.
+Verify ownership (mysql:mysql) and permissions on /var/lib/mysql.
+Use systemctl is-active mariadb to quickly confirm the service is running.
+Check the MariaDB logs first—most startup failures can be
